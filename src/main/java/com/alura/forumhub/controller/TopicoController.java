@@ -20,7 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -36,13 +36,18 @@ public class TopicoController {
     @Autowired
     private CursoRepository cursoRepository;
 
+    private Usuario getUsuarioLogado() {
+        return (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+
     @PostMapping
     @Transactional
     @Operation(summary = "Cadastrar um novo tópico", description = "Cria um novo tópico no fórum")
     public ResponseEntity<DadosDetalhamentoTopico> cadastrar(
             @RequestBody @Valid DadosCadastroTopico dados,
-            @AuthenticationPrincipal Usuario usuarioLogado,
             UriComponentsBuilder uriBuilder) {
+
+        Usuario usuarioLogado = getUsuarioLogado();
 
         // Validar se já existe tópico com mesmo título e mensagem
         if (topicoRepository.existsByTituloAndMensagem(dados.titulo(), dados.mensagem())) {
@@ -97,8 +102,9 @@ public class TopicoController {
     @Operation(summary = "Atualizar um tópico", description = "Atualiza os dados de um tópico existente")
     public ResponseEntity<DadosDetalhamentoTopico> atualizar(
             @PathVariable Long id,
-            @RequestBody @Valid DadosAtualizacaoTopico dados,
-            @AuthenticationPrincipal Usuario usuarioLogado) {
+            @RequestBody @Valid DadosAtualizacaoTopico dados) {
+
+        Usuario usuarioLogado = getUsuarioLogado();
 
         Topico topico = topicoRepository.findById(id)
                 .orElseThrow(() -> new ValidacaoException("Tópico não encontrado"));
@@ -127,9 +133,9 @@ public class TopicoController {
     @DeleteMapping("/{id}")
     @Transactional
     @Operation(summary = "Excluir um tópico", description = "Remove um tópico do fórum")
-    public ResponseEntity<Void> excluir(
-            @PathVariable Long id,
-            @AuthenticationPrincipal Usuario usuarioLogado) {
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+
+        Usuario usuarioLogado = getUsuarioLogado();
 
         Topico topico = topicoRepository.findById(id)
                 .orElseThrow(() -> new ValidacaoException("Tópico não encontrado"));
